@@ -1,0 +1,60 @@
+# =====================================================================
+# Render Blueprint Specification (render.yaml)
+# Project: Luna & Latte — Artisanal Nocturnal Café Platform
+# =====================================================================
+
+databases:
+  - name: luna-and-latte-db
+    databaseName: luna_latte_db
+    user: luna_latte_user
+    plan: free
+    region: oregon
+
+services:
+  # -------------------------------------------------------------------
+  # 1. Spring Boot Backend Web Service (Docker Container)
+  # -------------------------------------------------------------------
+  - type: web
+    name: luna-and-latte-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: oregon
+    plan: free
+    healthCheckPath: /api/menu/featured
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: SPRING_PROFILES_ACTIVE
+        value: postgres
+      - key: DATABASE_URL
+        fromDatabase:
+          name: luna-and-latte-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://luna-and-latte-web.onrender.com
+
+  # -------------------------------------------------------------------
+  # 2. React (Vite) Frontend Static Site
+  # -------------------------------------------------------------------
+  - type: web
+    name: luna-and-latte-web
+    runtime: static
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: luna-and-latte-api
+          property: host
+    routes:
+      # SPA rewrite rule to prevent 404s on browser refresh or direct route access
+      - type: rewrite
+        source: /*
+        destination: /index.html

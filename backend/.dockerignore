@@ -1,0 +1,10 @@
+**/.git
+**/.gitignore
+**/target
+**/node_modules
+**/dist
+**/.idea
+**/.vscode
+*.md
+*.bat
+*.ps1
